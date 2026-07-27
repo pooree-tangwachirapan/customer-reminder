@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="เตือนลูกค้า">
+<meta name="theme-color" content="#0e7c7b">
+<style>*{box-sizing:border-box}html,body{margin:0;padding:0}</style>
+</head>
+<body>
+<title>เตือนวันหมดอายุลูกค้า</title>
+<style>
+  /* ---------- APP · สไตล์ "เรียบมืออาชีพ" (เขียวหมอก) ---------- */
+  :root{
+    --bg:#eef2f4; --surface:#ffffff; --surface2:#f4f7f9; --ink:#16232b; --muted:#607585; --faint:#8fa0ac;
+    --line:#e4eaee; --primary:#0e7c7b; --primary-dk:#0b6463; --primary-ink:#ffffff; --pill:#e9f3f2;
+    --shadow:0 6px 18px -10px rgba(20,45,55,.28); --radius:18px; --bar:rgba(255,255,255,.9); --backdrop:#d7dee4;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0; background:var(--backdrop); color:var(--ink);
+    font-family:-apple-system,"SF Pro Text","Noto Sans Thai","Sarabun","Thonburi",system-ui,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased; line-height:1.5; overflow:hidden;
+    display:flex; justify-content:center;
+  }
+  .app{
+    width:100%; max-width:480px; height:100dvh; margin:0 auto; background:var(--bg); color:var(--ink);
+    display:flex; flex-direction:column; position:relative; overflow:hidden; font-size:15px;
+    box-shadow:0 0 50px rgba(20,40,55,.14);
+  }
+  #app{ flex:1 1 auto; display:flex; flex-direction:column; min-height:0; }
+
+  .topbar{ flex:none; padding:calc(8px + env(safe-area-inset-top)) 18px 12px; display:flex; align-items:center; gap:10px;
+    background:var(--bar); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); position:relative; z-index:5;
+    border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent); }
+  .topbar h1{ font-size:20px; font-weight:800; margin:0; letter-spacing:-.01em; flex:1; }
+  .topbar .sub{ font-size:12.5px; color:var(--muted); font-weight:500; margin-top:1px; }
+  .iconbtn{ width:38px; height:38px; border-radius:12px; border:none; background:var(--surface2); color:var(--ink);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; }
+  .iconbtn.ghost{ background:transparent; }
+  .iconbtn:active{ transform:scale(.94); }
+
+  .content{ flex:1 1 auto; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 16px 24px; min-height:0; }
+  .content::-webkit-scrollbar{ width:0; }
+
+  .tabbar{ flex:none; display:flex; background:var(--bar); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border-top:1px solid var(--line); padding:8px 6px calc(8px + env(safe-area-inset-bottom)); }
+  .tab{ flex:1; background:none; border:none; cursor:pointer; color:var(--faint); display:flex; flex-direction:column;
+    align-items:center; gap:3px; font-size:11px; font-weight:600; padding:3px 0; font-family:inherit; }
+  .tab[aria-current="true"]{ color:var(--primary); }
+
+  .card{ background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid var(--line); }
+  .rangebox{ padding:14px; margin-bottom:12px; }
+  .rangebox .rl{ font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:9px; }
+  .daterow{ display:flex; gap:10px; }
+  .field{ flex:1; }
+  .field label{ display:block; font-size:11.5px; color:var(--muted); margin-bottom:4px; font-weight:600; }
+  input[type="date"],input[type="text"],input[type="tel"],textarea,select{
+    width:100%; font-family:inherit; font-size:16px; color:var(--ink); background:var(--surface2);
+    border:1.5px solid var(--line); border-radius:12px; padding:11px 12px; outline:none; -webkit-appearance:none; appearance:none;
+  }
+  input:focus,textarea:focus,select:focus{ border-color:var(--primary); box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 20%,transparent); }
+  input[type="date"]{ min-height:46px; }
+  textarea{ resize:none; min-height:64px; line-height:1.45; }
+
+  .chips{ display:flex; gap:7px; overflow-x:auto; padding:2px 0 3px; margin:0 -2px; scrollbar-width:none; }
+  .chips::-webkit-scrollbar{ display:none; }
+  .chip{ flex:none; border:1.5px solid var(--line); background:var(--surface); color:var(--muted); border-radius:999px;
+    padding:7px 13px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap; }
+  .chip[aria-pressed="true"]{ background:var(--primary); color:var(--primary-ink); border-color:var(--primary); }
+
+  .summary{ display:flex; align-items:baseline; gap:8px; margin:16px 2px 10px; }
+  .summary b{ font-size:15px; } .summary .cnt{ color:var(--primary); font-weight:800; }
+
+  .rem{ display:flex; align-items:stretch; background:var(--surface); border-radius:var(--radius);
+    box-shadow:var(--shadow); border:1px solid var(--line); margin-bottom:10px; overflow:hidden; cursor:pointer; }
+  .rem .stripe{ width:5px; flex:none; background:var(--tc); }
+  .rem .datecol{ flex:none; width:58px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:10px 0; background:color-mix(in srgb,var(--tc) 10%,var(--surface)); }
+  .rem .datecol .d{ font-size:21px; font-weight:800; line-height:1; font-variant-numeric:tabular-nums; color:var(--ink); }
+  .rem .datecol .m{ font-size:11px; color:var(--muted); font-weight:600; margin-top:2px; }
+  .rem .body{ flex:1; padding:11px 12px; min-width:0; }
+  .rem .body .nm{ font-weight:700; font-size:15px; letter-spacing:-.01em; }
+  .rem .body .meta{ display:flex; align-items:center; gap:7px; margin-top:5px; flex-wrap:wrap; }
+  .typechip{ display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; padding:3px 9px 3px 7px;
+    border-radius:999px; color:color-mix(in srgb,var(--tc) 78%,var(--ink)); background:color-mix(in srgb,var(--tc) 15%,var(--surface)); }
+  .typechip svg{ color:var(--tc); }
+  .daysleft{ font-size:12px; font-weight:700; padding:3px 9px; border-radius:999px; font-variant-numeric:tabular-nums;
+    background:var(--pill); color:var(--muted); }
+  .daysleft.soon{ background:color-mix(in srgb,#e8804a 18%,var(--surface)); color:color-mix(in srgb,#d1671f 80%,var(--ink)); }
+  .daysleft.today{ background:color-mix(in srgb,#e5484d 20%,var(--surface)); color:color-mix(in srgb,#d33840 82%,var(--ink)); }
+  .daysleft.past{ background:color-mix(in srgb,#8b95a1 22%,var(--surface)); color:var(--muted); }
+  .rem .actioncol{ flex:none; display:flex; align-items:center; padding-right:10px; color:var(--faint); }
+
+  .clist-item{ display:flex; align-items:center; gap:12px; padding:12px 13px; background:var(--surface);
+    border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid var(--line); margin-bottom:9px; cursor:pointer; }
+  .avatar{ width:44px; height:44px; border-radius:14px; flex:none; display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:17px; color:var(--primary-ink); background:var(--primary); overflow:hidden; }
+  .avatar img{ width:100%; height:100%; object-fit:cover; }
+  .clist-item .ci-body{ flex:1; min-width:0; }
+  .clist-item .ci-name{ font-weight:700; font-size:15px; }
+  .clist-item .ci-sub{ font-size:12.5px; color:var(--muted); margin-top:2px; display:flex; gap:8px; flex-wrap:wrap; }
+  .badge-n{ font-size:11px; font-weight:700; background:var(--pill); color:var(--primary); padding:2px 8px; border-radius:999px; white-space:nowrap; }
+
+  .searchbar{ display:flex; align-items:center; gap:9px; background:var(--surface); border:1.5px solid var(--line);
+    border-radius:14px; padding:0 12px; margin-bottom:12px; }
+  .searchbar input{ border:none; background:none; padding:11px 0; box-shadow:none !important; }
+  .searchbar svg{ color:var(--faint); flex:none; }
+
+  .detail-hero{ display:flex; align-items:center; gap:14px; padding:16px; margin-bottom:12px; }
+  .detail-hero .avatar{ width:62px; height:62px; border-radius:18px; font-size:23px; }
+  .detail-hero .dh-name{ font-size:20px; font-weight:800; letter-spacing:-.01em; }
+  .detail-hero .dh-sub{ color:var(--muted); font-size:13px; margin-top:3px; }
+  .info-grid{ padding:4px 4px 6px; }
+  .info-row{ display:flex; gap:12px; padding:11px 12px; border-bottom:1px solid var(--line); }
+  .info-row:last-child{ border-bottom:none; }
+  .info-row .k{ width:82px; flex:none; color:var(--muted); font-size:13px; font-weight:600; }
+  .info-row .v{ flex:1; font-size:14.5px; word-break:break-word; }
+  .info-row .v a{ color:var(--primary); text-decoration:none; font-weight:600; }
+  .sec-label{ font-size:12px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; margin:18px 4px 9px; }
+
+  .form-group{ margin-bottom:13px; } .form-group>label{ display:block; font-size:12.5px; font-weight:700; color:var(--muted); margin-bottom:6px; }
+  .remrow{ display:flex; gap:8px; align-items:flex-start; margin-bottom:9px; }
+  .remrow .rr-main{ flex:1; display:flex; flex-direction:column; gap:8px; }
+  .remrow .rr-del{ width:46px; height:46px; flex:none; border-radius:12px; border:1.5px solid var(--line);
+    background:var(--surface); color:#d1554e; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .addrem{ width:100%; border:1.5px dashed var(--line); background:transparent; color:var(--primary); font-weight:700;
+    padding:11px; border-radius:12px; cursor:pointer; font-family:inherit; font-size:14px; display:flex; align-items:center; justify-content:center; gap:7px; }
+  .photo-pick{ display:flex; align-items:center; gap:12px; }
+  .photo-thumb{ width:64px; height:64px; border-radius:14px; background:var(--surface2); border:1.5px solid var(--line);
+    overflow:hidden; display:flex; align-items:center; justify-content:center; color:var(--faint); flex:none; }
+  .photo-thumb img{ width:100%; height:100%; object-fit:cover; }
+
+  .btn{ width:100%; border:none; border-radius:14px; padding:14px; font-size:15.5px; font-weight:800; cursor:pointer;
+    font-family:inherit; background:var(--primary); color:var(--primary-ink); letter-spacing:.01em; }
+  .btn:active{ transform:scale(.99); }
+  .btn.secondary{ background:var(--surface2); color:var(--ink); border:1.5px solid var(--line); }
+  .btn.danger{ background:transparent; color:#d1554e; border:1.5px solid color-mix(in srgb,#d1554e 40%,var(--line)); }
+  .stack{ display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+
+  .empty{ text-align:center; padding:46px 24px; color:var(--muted); }
+  .empty .em-ic{ width:64px; height:64px; margin:0 auto 14px; border-radius:20px; background:var(--surface2);
+    display:flex; align-items:center; justify-content:center; color:var(--faint); }
+  .empty .em-t{ font-weight:700; color:var(--ink); font-size:16px; margin-bottom:5px; }
+  .empty .em-s{ font-size:13.5px; line-height:1.5; }
+
+  .settings-note{ font-size:12.5px; color:var(--muted); line-height:1.55; padding:2px 4px; }
+  .kv-mini{ display:flex; justify-content:space-between; padding:12px 13px; background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:9px; align-items:center; }
+  .kv-mini .kv-k{ font-weight:700; font-size:14px; } .kv-mini .kv-v{ color:var(--primary); font-weight:800; font-variant-numeric:tabular-nums; }
+
+  /* install banner + sheet */
+  .installbar{ display:flex; align-items:center; gap:11px; background:linear-gradient(135deg,var(--primary),var(--primary-dk));
+    color:#fff; border-radius:var(--radius); padding:12px 12px 12px 14px; margin-bottom:13px; box-shadow:0 8px 20px -10px rgba(14,124,123,.55); }
+  .installbar .ib-ic{ flex:none; opacity:.95; } .installbar .ib-txt{ flex:1; font-size:13px; font-weight:600; line-height:1.32; }
+  .installbar .ib-txt b{ font-weight:800; }
+  .installbar .ib-go{ background:#fff; color:var(--primary); border:none; border-radius:11px; padding:8px 13px; font-weight:800; font-size:13px; cursor:pointer; font-family:inherit; flex:none; }
+  .installbar .ib-x{ background:transparent; border:none; color:rgba(255,255,255,.85); cursor:pointer; padding:2px; flex:none; }
+
+  .sheet-mask{ position:fixed; inset:0; background:rgba(12,20,26,.55); display:flex; align-items:flex-end; justify-content:center;
+    z-index:100; padding:14px; animation:fade .2s ease; }
+  @keyframes fade{ from{ opacity:0; } }
+  .sheet{ background:var(--surface); color:var(--ink); border-radius:24px; padding:20px 20px 22px; max-width:452px; width:100%;
+    box-shadow:0 -12px 44px rgba(0,0,0,.32); animation:rise .28s cubic-bezier(.2,.8,.2,1); }
+  @keyframes rise{ from{ transform:translateY(24px); opacity:.6; } }
+  .sheet .sh-head{ display:flex; align-items:center; gap:12px; margin-bottom:6px; }
+  .sheet .sh-ic{ width:46px; height:46px; border-radius:13px; background:var(--pill); color:var(--primary); display:flex; align-items:center; justify-content:center; flex:none; }
+  .sheet h3{ margin:0; font-size:18px; font-weight:800; } .sheet .sh-sub{ font-size:13px; color:var(--muted); margin:2px 0 12px; }
+  .step{ display:flex; gap:12px; align-items:center; padding:11px 0; border-bottom:1px solid var(--line); }
+  .step:last-of-type{ border-bottom:none; }
+  .step .n{ width:26px; height:26px; border-radius:50%; background:var(--primary); color:#fff; font-weight:800; font-size:13px;
+    display:flex; align-items:center; justify-content:center; flex:none; }
+  .step .stx{ font-size:14px; } .step .stx .shareglyph{ display:inline-flex; vertical-align:-4px; margin:0 2px; color:var(--primary); }
+
+  .toast{ position:absolute; left:50%; bottom:calc(84px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(12px); z-index:60;
+    background:rgba(20,26,34,.94); color:#fff; padding:11px 18px; border-radius:14px; font-size:13.5px; font-weight:600;
+    opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; max-width:80%; text-align:center; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
+</style>
+
+<div class="app">
+  <div id="app"></div>
+  <div class="toast" id="toast"></div>
+  <div id="sheetHost"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  function svg(p, s){ s=s||24; return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; }
+  var ICON = {
+    report:  svg('<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/>'),
+    people:  svg('<circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.2a3 3 0 0 1 0 5.6M17.5 20a5.5 5.5 0 0 0-3-4.9"/>'),
+    plus:    svg('<circle cx="12" cy="12" r="9"/><path d="M12 8.5v7M8.5 12h7"/>'),
+    gear:    svg('<circle cx="12" cy="12" r="3"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 7l1.9 1.1M17.9 15.9l1.9 1.1M4.2 17l1.9-1.1M17.9 8.1l1.9-1.1"/>'),
+    back:    svg('<path d="M15 5l-7 7 7 7"/>'),
+    edit:    svg('<path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M13.5 6.5l3 3"/>'),
+    trash:   svg('<path d="M4 7h16M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M6 7l1 12.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 7"/>'),
+    chev:    svg('<path d="M9 6l6 6-6 6"/>'),
+    search:  svg('<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.2-3.2"/>'),
+    bell:    svg('<path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z"/><path d="M10 20a2 2 0 0 0 4 0"/>',18),
+    upload:  svg('<path d="M12 15V4M8 8l4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>'),
+    download:svg('<path d="M12 4v11M8 11l4 4 4-4"/><path d="M4 19h16"/>'),
+    photo:   svg('<rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="8.5" cy="10" r="1.6"/><path d="M4 17l4.5-4 3 2.5L15 11l5 5"/>'),
+    install: svg('<rect x="5" y="2.5" width="14" height="19" rx="3"/><path d="M12 9.5v5M9.5 12h5"/>',20),
+    share:   svg('<path d="M12 3v11M8.5 6.5 12 3l3.5 3.5"/><path d="M7 11H5.5A2.5 2.5 0 0 0 3 13.5v5A2.5 2.5 0 0 0 5.5 21h13a2.5 2.5 0 0 0 2.5-2.5v-5A2.5 2.5 0 0 0 18.5 11H17"/>',18),
+    check:   svg('<path d="M20 6 9 17l-5-5"/>',18)
+  };
+  function tsvg(p){ return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; }
+  var TYPES = {
+    birthday:  { label:'วันเกิด',  color:'#e05c9a', recur:true,  icon:tsvg('<path d="M5 21h14v-7H5z"/><path d="M4 14c1.3 1.2 2.7 1.2 4 0s2.7-1.2 4 0 2.7 1.2 4 0 2.7-1.2 4 0"/><path d="M12 7v4M12 4.5a1 1 0 1 0 0 .1"/>') },
+    life:      { label:'เบี้ยประกันชีวิต', color:'#0891b2', recur:true, icon:tsvg('<path d="M12 3.2v1.3"/><path d="M3 12.5a9 9 0 0 1 18 0z"/><path d="M12 12.5v5.7a2.4 2.4 0 0 0 4.8 0"/>') },
+    insurance: { label:'ประกันรถ', color:'#2f6bff', recur:false, icon:tsvg('<path d="M4 13l1.6-4.4A2 2 0 0 1 7.5 7h9a2 2 0 0 1 1.9 1.6L20 13v5h-3v-2H7v2H4z"/><circle cx="7.5" cy="15.5" r="1.2"/><circle cx="16.5" cy="15.5" r="1.2"/>') },
+    prb:       { label:'พรบ.',     color:'#12a150', recur:false, icon:tsvg('<path d="M12 3l7 2.5v5c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9v-5z"/><path d="M9 12l2 2 4-4"/>') },
+    membership:{ label:'สมาชิก',   color:'#8b5cf6', recur:false, icon:tsvg('<path d="M12 4l2.3 4.7 5.2.8-3.7 3.6.9 5.1L12 15.8 7.3 18.2l.9-5.1L4.5 9.5l5.2-.8z"/>') },
+    lotte:     { label:'ค่า Lotte',color:'#e0952b', recur:false, icon:tsvg('<path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v12" stroke-dasharray="1.5 2.5"/>') },
+    custom:    { label:'อื่นๆ',    color:'#64748b', recur:false, icon:tsvg('<path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z"/><path d="M10 20a2 2 0 0 0 4 0"/>') }
+  };
+  var TYPE_ORDER = ['birthday','life','insurance','prb','membership','lotte','custom'];
+  var TH_M = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+  function today(){ var d=new Date(); d.setHours(0,0,0,0); return d; }
+  function strip(d){ var x=new Date(d); x.setHours(0,0,0,0); return x; }
+  function iso(d){ var m=(''+(d.getMonth()+1)).padStart(2,'0'), day=(''+d.getDate()).padStart(2,'0'); return d.getFullYear()+'-'+m+'-'+day; }
+  function fromISO(s){ if(!s) return null; var p=s.split('-'); return strip(new Date(+p[0],+p[1]-1,+p[2])); }
+  function addDays(d,n){ var x=new Date(d); x.setDate(x.getDate()+n); return x; }
+  function fmtThai(d){ return d.getDate()+' '+TH_M[d.getMonth()]+' '+(d.getFullYear()+543); }
+  function nextDue(r){
+    var d=fromISO(r.date); if(!d) return null;
+    if(TYPES[r.type] && TYPES[r.type].recur){
+      var t=today(), c=new Date(t.getFullYear(), d.getMonth(), d.getDate());
+      if(strip(c) < t) c.setFullYear(c.getFullYear()+1);
+      return strip(c);
+    }
+    return d;
+  }
+  function daysUntil(d){ return Math.round((strip(d)-today())/86400000); }
+  function daysLabel(n){ if(n===0) return 'วันนี้'; if(n===1) return 'พรุ่งนี้'; if(n>1) return 'อีก '+n+' วัน'; return 'เลย '+(-n)+' วัน'; }
+  function daysClass(n){ if(n<0) return 'past'; if(n===0) return 'today'; if(n<=7) return 'soon'; return ''; }
+  function esc(s){ return (''+(s==null?'':s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  var KEY='lukka_customers_v1', DISMISS='lukka_install_dismiss', memFallback=null;
+  function load(){ try{ var raw=localStorage.getItem(KEY); if(raw) return JSON.parse(raw); }catch(e){} return memFallback; }
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state.customers)); }catch(e){ memFallback=state.customers; } }
+  function getFlag(k){ try{ return localStorage.getItem(k)==='1'; }catch(e){ return false; } }
+  function setFlag(k){ try{ localStorage.setItem(k,'1'); }catch(e){} }
+  function uid(){ return 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+  function seed(){
+    var t=today();
+    function d(off){ return iso(addDays(t,off)); }
+    function bday(off,yr){ var b=addDays(t,off); return yr+'-'+('0'+(b.getMonth()+1)).slice(-2)+'-'+('0'+b.getDate()).slice(-2); }
+    return [
+      { id:uid(), name:'สมชาย ใจดี', phone:'081-234-5678', line:'somchai_jd', plate:'1กก 1234', policy:'MTI-6633021',
+        addr:'99/12 ถ.สุขุมวิท เขตคลองเตย กทม.', note:'ลูกค้าประจำ ต่อประกันชั้น 1 ทุกปี', photo:'',
+        reminders:[ {type:'prb',date:d(4)}, {type:'insurance',date:d(23)}, {type:'birthday',date:bday(2,'1988')} ] },
+      { id:uid(), name:'มาลี ศรีสุข', phone:'089-555-1212', line:'malee.s', plate:'', policy:'',
+        addr:'', note:'ซื้อหวยทุกงวด งวดละ 500', photo:'',
+        reminders:[ {type:'lotte',date:d(6)}, {type:'birthday',date:bday(11,'1990')} ] },
+      { id:uid(), name:'วิชัย พูนผล', phone:'092-118-4477', line:'', plate:'ขข 8890', policy:'VIB-771203',
+        addr:'45 หมู่ 3 ต.บางพลี จ.สมุทรปราการ', note:'', photo:'',
+        reminders:[ {type:'membership',date:d(9)}, {type:'prb',date:d(41)} ] },
+      { id:uid(), name:'นภาพร ทองมี', phone:'086-321-9098', line:'napa_tm', plate:'3ธน 5567', policy:'AXA-559921',
+        addr:'', note:'ต่อประกันชั้น 2+ ราคาพิเศษ', photo:'',
+        reminders:[ {type:'insurance',date:d(1)}, {type:'birthday',date:'1995-12-01'} ] },
+      { id:uid(), name:'อนุชา มั่งมี', phone:'095-777-3030', line:'', plate:'กท 2211', policy:'',
+        addr:'112 ซ.รามคำแหง 24', note:'ต่อทะเบียนรถ + พรบ พร้อมกัน', photo:'',
+        reminders:[ {type:'custom',date:d(17),label:'ต่อทะเบียนรถ'}, {type:'prb',date:d(17)} ] },
+      { id:uid(), name:'ศิริพร แก้วใส', phone:'083-444-1900', line:'sirikaew', plate:'', policy:'MTI-220041',
+        addr:'', note:'สมาชิกร้าน ต่ออายุปีต่อปี', photo:'',
+        reminders:[ {type:'membership',date:d(27)}, {type:'lotte',date:d(6)} ] },
+      { id:uid(), name:'ธนวัฒน์ เจริญ', phone:'090-909-1234', line:'', plate:'5กก 9999', policy:'VIB-889012',
+        addr:'', note:'', photo:'',
+        reminders:[ {type:'insurance',date:d(52)}, {type:'prb',date:d(58)} ] }
+    ];
+  }
+
+  var state = {
+    customers: null, screen:'report',
+    from: iso(today()), to: iso(addDays(today(),30)),
+    typeFilter:'all', search:'', selId:null, draft:null, focusSearch:false
+  };
+  state.customers = load();
+  if(!state.customers){ state.customers = seed(); save(); }
+
+  var app = document.getElementById('app');
+  var toastEl = document.getElementById('toast');
+  var sheetHost = document.getElementById('sheetHost');
+  var toastT;
+  function toast(msg){ toastEl.textContent=msg; toastEl.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(function(){ toastEl.classList.remove('show'); },1900); }
+
+  function reportItems(){
+    var from=fromISO(state.from), to=fromISO(state.to);
+    if(!from||!to) return [];
+    if(to<from){ var tmp=from; from=to; to=tmp; }
+    var items=[];
+    state.customers.forEach(function(c){
+      (c.reminders||[]).forEach(function(r){
+        if(state.typeFilter!=='all' && r.type!==state.typeFilter) return;
+        var due=nextDue(r); if(!due) return;
+        if(due>=from && due<=to) items.push({c:c,r:r,due:due});
+      });
+    });
+    items.sort(function(a,b){ return a.due-b.due; });
+    return items;
+  }
+  function typeLabel(r){ return r.label ? r.label : TYPES[r.type].label; }
+  function initials(name){ var p=(name||'').trim().split(/\s+/); return ((p[0]||' ')[0]||'')+((p[1]||'')[0]||''); }
+  function byId(id){ for(var i=0;i<state.customers.length;i++) if(state.customers[i].id===id) return state.customers[i]; return null; }
+
+  /* ---- install helpers ---- */
+  var deferredPrompt=null;
+  function isStandalone(){ return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone===true; }
+  function showInstallBanner(){ return !isStandalone() && !getFlag(DISMISS); }
+
+  function screenReport(){
+    var items=reportItems();
+    var banner = showInstallBanner() ? '<div class="installbar"><span class="ib-ic">'+ICON.install+'</span>'+
+        '<span class="ib-txt"><b>เพิ่มลงหน้าจอโฮม</b><br>เปิดใช้เหมือนแอปจริง ไม่ต้องเข้าเว็บ</span>'+
+        '<button class="ib-go" data-install="1">ติดตั้ง</button>'+
+        '<button class="ib-x" data-installx="1" aria-label="ปิด">'+svg('<path d="M6 6l12 12M18 6l-12 12"/>',18)+'</button></div>' : '';
+
+    var filters='<div class="chips"><button class="chip" data-type="all" aria-pressed="'+(state.typeFilter==='all')+'">ทั้งหมด</button>'+
+      TYPE_ORDER.map(function(k){ return '<button class="chip" data-type="'+k+'" aria-pressed="'+(state.typeFilter===k)+'">'+TYPES[k].label+'</button>'; }).join('')+'</div>';
+
+    var list;
+    if(items.length===0){
+      list='<div class="empty"><div class="em-ic">'+ICON.bell+'</div><div class="em-t">ไม่มีรายการในช่วงนี้</div>'+
+        '<div class="em-s">ลองขยายช่วงวันที่ หรือเลือกดู “ทั้งหมด”</div></div>';
+    } else {
+      list=items.map(function(it){
+        var due=it.due, n=daysUntil(due), tc=TYPES[it.r.type].color;
+        return '<div class="rem" data-open="'+it.c.id+'" style="--tc:'+tc+'">'+
+          '<div class="stripe"></div>'+
+          '<div class="datecol"><div class="d">'+due.getDate()+'</div><div class="m">'+TH_M[due.getMonth()]+'</div></div>'+
+          '<div class="body"><div class="nm">'+esc(it.c.name)+'</div>'+
+            '<div class="meta"><span class="typechip">'+TYPES[it.r.type].icon+esc(typeLabel(it.r))+'</span>'+
+            '<span class="daysleft '+daysClass(n)+'">'+daysLabel(n)+'</span></div></div>'+
+          '<div class="actioncol">'+ICON.chev+'</div></div>';
+      }).join('');
+    }
+
+    return '<div class="topbar"><div style="flex:1"><h1>แจ้งเตือนถึงกำหนด</h1><div class="sub">'+fmtThai(fromISO(state.from))+' – '+fmtThai(fromISO(state.to))+'</div></div></div>'+
+      '<div class="content">'+ banner +
+        '<div class="card rangebox"><div class="rl">เลือกช่วงวันที่</div>'+
+          '<div class="daterow"><div class="field"><label>จากวันที่</label><input type="date" data-role="from" value="'+state.from+'"></div>'+
+          '<div class="field"><label>ถึงวันที่</label><input type="date" data-role="to" value="'+state.to+'"></div></div>'+
+          '<div class="chips" style="margin-top:11px">'+
+            '<button class="chip" data-q="7">7 วัน</button><button class="chip" data-q="15">15 วัน</button>'+
+            '<button class="chip" data-q="30">30 วัน</button><button class="chip" data-q="90">90 วัน</button>'+
+            '<button class="chip" data-q="month">เดือนนี้</button></div>'+
+        '</div>'+
+        filters+
+        '<div class="summary"><b>พบ <span class="cnt">'+items.length+'</span> รายการ</b></div>'+
+        list+
+      '</div>'+ tabbar('report');
+  }
+
+  function screenList(){
+    var q=state.search.trim().toLowerCase();
+    var arr=state.customers.slice().sort(function(a,b){ return a.name.localeCompare(b.name,'th'); });
+    if(q) arr=arr.filter(function(c){ return (c.name+' '+c.phone+' '+(c.plate||'')+' '+(c.line||'')).toLowerCase().indexOf(q)>=0; });
+    var list;
+    if(arr.length===0){
+      list='<div class="empty"><div class="em-ic">'+ICON.people+'</div><div class="em-t">'+(q?'ไม่พบลูกค้า':'ยังไม่มีลูกค้า')+'</div>'+
+        '<div class="em-s">'+(q?'ลองค้นด้วยชื่อหรือเบอร์โทรอื่น':'กดปุ่ม “เพิ่ม” ด้านล่างเพื่อเพิ่มลูกค้าคนแรก')+'</div></div>';
+    } else {
+      list=arr.map(function(c){
+        var av = c.photo ? '<img src="'+c.photo+'" alt="">' : esc(initials(c.name));
+        var sub=[]; if(c.phone) sub.push(esc(c.phone)); if(c.plate) sub.push(esc(c.plate));
+        return '<div class="clist-item" data-open="'+c.id+'"><div class="avatar">'+av+'</div>'+
+          '<div class="ci-body"><div class="ci-name">'+esc(c.name)+'</div>'+
+          '<div class="ci-sub">'+sub.join(' · ')+'</div></div>'+
+          '<span class="badge-n">'+(c.reminders?c.reminders.length:0)+' เตือน</span>'+ICON.chev+'</div>';
+      }).join('');
+    }
+    return '<div class="topbar"><h1>ลูกค้า</h1><div class="sub" style="margin-left:auto;color:var(--muted);font-size:13px">'+state.customers.length+' คน</div></div>'+
+      '<div class="content">'+
+        '<div class="searchbar">'+ICON.search+'<input type="text" data-role="search" placeholder="ค้นหาชื่อ / เบอร์ / ทะเบียน" value="'+esc(state.search)+'"></div>'+
+        list+
+      '</div>'+ tabbar('list');
+  }
+
+  function screenDetail(){
+    var c=byId(state.selId); if(!c){ state.screen='list'; return screenList(); }
+    var av = c.photo ? '<img src="'+c.photo+'" alt="">' : esc(initials(c.name));
+    var info=[];
+    function row(k,v){ return '<div class="info-row"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
+    if(c.phone) info.push(row('เบอร์โทร','<a href="tel:'+esc(c.phone)+'">'+esc(c.phone)+'</a>'));
+    if(c.line) info.push(row('LINE ID', esc(c.line)));
+    if(c.plate) info.push(row('ทะเบียนรถ', esc(c.plate)));
+    if(c.policy) info.push(row('เลขกรมธรรม์', esc(c.policy)));
+    if(c.addr) info.push(row('ที่อยู่', esc(c.addr)));
+    if(c.note) info.push(row('บันทึก', esc(c.note)));
+
+    var rems=(c.reminders||[]).slice().sort(function(a,b){ return nextDue(a)-nextDue(b); }).map(function(r){
+      var due=nextDue(r), n=daysUntil(due), tc=TYPES[r.type].color;
+      return '<div class="rem" style="--tc:'+tc+'; cursor:default"><div class="stripe"></div>'+
+        '<div class="datecol"><div class="d">'+due.getDate()+'</div><div class="m">'+TH_M[due.getMonth()]+'</div></div>'+
+        '<div class="body"><div class="nm">'+esc(typeLabel(r))+'</div>'+
+        '<div class="meta"><span class="daysleft '+daysClass(n)+'">'+daysLabel(n)+'</span>'+
+        '<span style="font-size:12px;color:var(--muted)">'+fmtThai(due)+(TYPES[r.type].recur?' · ทุกปี':'')+'</span></div></div></div>';
+    }).join('') || '<div class="settings-note" style="padding:12px 4px">ยังไม่มีรายการแจ้งเตือน</div>';
+
+    return '<div class="topbar"><button class="iconbtn ghost" data-nav="list">'+ICON.back+'</button><h1 style="font-size:18px">รายละเอียด</h1>'+
+        '<button class="iconbtn" data-edit="'+c.id+'">'+ICON.edit+'</button></div>'+
+      '<div class="content">'+
+        '<div class="card detail-hero"><div class="avatar">'+av+'</div>'+
+          '<div><div class="dh-name">'+esc(c.name)+'</div><div class="dh-sub">'+(c.phone?esc(c.phone):'—')+'</div></div></div>'+
+        (info.length?'<div class="card info-grid">'+info.join('')+'</div>':'')+
+        '<div class="sec-label">รายการแจ้งเตือน</div>'+ rems +
+        '<div class="stack" style="margin-top:16px">'+
+          (c.phone?'<a class="btn" href="tel:'+esc(c.phone)+'" style="text-decoration:none;text-align:center;display:block">โทรหาลูกค้า</a>':'')+
+          '<button class="btn danger" data-del="'+c.id+'">ลบลูกค้าคนนี้</button></div>'+
+      '</div>'+ tabbar('list');
+  }
+
+  function screenForm(){
+    var d=state.draft;
+    var isEdit=!!(d && d.id && byId(d.id));
+    var photoThumb = d.photo ? '<img src="'+d.photo+'" alt="">' : ICON.photo;
+    var remRows=(d.reminders||[]).map(function(r,i){
+      var opts=TYPE_ORDER.map(function(k){ return '<option value="'+k+'"'+(r.type===k?' selected':'')+'>'+TYPES[k].label+'</option>'; }).join('');
+      var customField = r.type==='custom' ? '<input type="text" data-rem="'+i+'" data-k="label" placeholder="ระบุเรื่องที่เตือน เช่น ต่อทะเบียน" value="'+esc(r.label||'')+'">' : '';
+      return '<div class="remrow"><div class="rr-main">'+
+        '<select data-rem="'+i+'" data-k="type">'+opts+'</select>'+ customField +
+        '<input type="date" data-rem="'+i+'" data-k="date" value="'+esc(r.date||'')+'"></div>'+
+        '<button class="rr-del" data-remdel="'+i+'">'+ICON.trash+'</button></div>';
+    }).join('');
+
+    return '<div class="topbar"><button class="iconbtn ghost" data-nav="'+(isEdit?'detail':'report')+'">'+ICON.back+'</button>'+
+        '<h1 style="font-size:18px">'+(isEdit?'แก้ไขลูกค้า':'เพิ่มลูกค้า')+'</h1></div>'+
+      '<div class="content"><form id="custform" autocomplete="off">'+
+        '<div class="form-group"><label>ชื่อ-นามสกุล *</label><input type="text" data-f="name" value="'+esc(d.name||'')+'" placeholder="เช่น สมชาย ใจดี" required></div>'+
+        '<div class="daterow"><div class="form-group" style="flex:1"><label>เบอร์โทร</label><input type="tel" data-f="phone" value="'+esc(d.phone||'')+'" placeholder="08x-xxx-xxxx"></div>'+
+        '<div class="form-group" style="flex:1"><label>LINE ID</label><input type="text" data-f="line" value="'+esc(d.line||'')+'"></div></div>'+
+        '<div class="daterow"><div class="form-group" style="flex:1"><label>ทะเบียนรถ</label><input type="text" data-f="plate" value="'+esc(d.plate||'')+'" placeholder="1กก 1234"></div>'+
+        '<div class="form-group" style="flex:1"><label>เลขกรมธรรม์</label><input type="text" data-f="policy" value="'+esc(d.policy||'')+'"></div></div>'+
+        '<div class="form-group"><label>ที่อยู่</label><textarea data-f="addr" placeholder="ที่อยู่ลูกค้า">'+esc(d.addr||'')+'</textarea></div>'+
+        '<div class="form-group"><label>บันทึกเพิ่มเติม</label><textarea data-f="note" placeholder="โน้ต เช่น ต่อประกันทุกปี">'+esc(d.note||'')+'</textarea></div>'+
+        '<div class="form-group"><label>รูปถ่าย / เอกสารแนบ</label><div class="photo-pick">'+
+          '<div class="photo-thumb">'+photoThumb+'</div>'+
+          '<div class="stack" style="flex:1;margin:0">'+
+          '<button type="button" class="btn secondary" data-photo="1" style="padding:10px">'+(d.photo?'เปลี่ยนรูป':'เพิ่มรูป/ถ่ายภาพ')+'</button>'+
+          (d.photo?'<button type="button" class="btn danger" data-photodel="1" style="padding:10px">ลบรูป</button>':'')+
+          '</div><input type="file" accept="image/*" id="photoInput" style="display:none"></div></div>'+
+        '<div class="sec-label" style="margin-left:0">รายการที่ต้องแจ้งเตือน</div>'+
+        remRows +
+        '<button type="button" class="addrem" data-addrem="1">'+ICON.plus+' เพิ่มรายการแจ้งเตือน</button>'+
+        '<div class="stack" style="margin-top:18px">'+
+          '<button type="submit" class="btn">บันทึกข้อมูล</button>'+
+          (isEdit?'<button type="button" class="btn secondary" data-nav="detail">ยกเลิก</button>':'')+
+        '</div>'+
+      '</form></div>'+ tabbar('add');
+  }
+
+  function screenSettings(){
+    var totRem=state.customers.reduce(function(s,c){ return s+(c.reminders?c.reminders.length:0); },0);
+    var persist='บันทึกลงเครื่องนี้อัตโนมัติ';
+    try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); }catch(e){ persist='โหมดตัวอย่าง (ไฟล์จริงจะบันทึกถาวร)'; }
+    var installBlock = isStandalone()
+      ? '<div class="kv-mini"><span class="kv-k">แอปหน้าจอโฮม</span><span class="kv-v" style="display:flex;align-items:center;gap:5px">'+ICON.check+'ติดตั้งแล้ว</span></div>'
+      : '<button class="btn" data-install="1" style="display:flex;align-items:center;justify-content:center;gap:8px">'+ICON.install+' เพิ่มลงหน้าจอโฮม (ใช้เหมือนแอป)</button>';
+
+    return '<div class="topbar"><h1>ตั้งค่า</h1></div>'+
+      '<div class="content">'+
+        '<div class="kv-mini"><span class="kv-k">ลูกค้าทั้งหมด</span><span class="kv-v">'+state.customers.length+' คน</span></div>'+
+        '<div class="kv-mini"><span class="kv-k">รายการแจ้งเตือน</span><span class="kv-v">'+totRem+' รายการ</span></div>'+
+        '<div class="kv-mini"><span class="kv-k">การจัดเก็บ</span><span class="kv-v" style="font-size:12.5px;color:var(--muted);font-weight:600">'+persist+'</span></div>'+
+        '<div class="sec-label" style="margin-left:0">อัปเดตรายชื่อลูกค้า</div>'+
+        '<button class="btn" data-cloud="1" style="display:flex;align-items:center;justify-content:center;gap:8px">'+ICON.download+' โหลดรายชื่อลูกค้าล่าสุด</button>'+
+        '<div class="settings-note" style="margin-top:8px">ดึงรายชื่อลูกค้าชุดล่าสุดที่เตรียมไว้ให้ (จะแทนที่ข้อมูลในเครื่องทั้งหมด — ควรกด “ส่งออกข้อมูล” สำรองก่อนถ้าเคยแก้ไขเอง)</div>'+
+        '<div class="sec-label" style="margin-left:0">แอปบนมือถือ</div>'+ installBlock +
+        '<div class="sec-label" style="margin-left:0">สำรอง & ย้ายข้อมูล</div>'+
+        '<div class="stack">'+
+          '<button class="btn secondary" data-export="1">'+ICON.download+' &nbsp;ส่งออกข้อมูล (ไฟล์สำรอง)</button>'+
+          '<button class="btn secondary" data-import="1">'+ICON.upload+' &nbsp;นำเข้าข้อมูลจากไฟล์สำรอง</button>'+
+          '<input type="file" accept="application/json,.json" id="importInput" style="display:none">'+
+        '</div>'+
+        '<div class="settings-note" style="margin-top:14px">ข้อมูลลูกค้าเก็บอยู่ในเครื่องของคุณเท่านั้น ไม่ได้ส่งขึ้นออนไลน์ · แนะนำให้กด “ส่งออกข้อมูล” เก็บไฟล์สำรองไว้เป็นระยะ</div>'+
+        '<div class="sec-label" style="margin-left:0">ล้างข้อมูล</div>'+
+        '<button class="btn danger" data-reset="1">รีเซ็ตเป็นข้อมูลตัวอย่าง</button>'+
+      '</div>'+ tabbar('settings');
+  }
+
+  function tabbar(active){
+    function t(id,scr,label,ic){ return '<button class="tab" data-tab="'+scr+'" aria-current="'+(active===id)+'">'+ic+'<span>'+label+'</span></button>'; }
+    return '<div class="tabbar">'+
+      t('report','report','รายงาน',ICON.report)+
+      t('list','list','ลูกค้า',ICON.people)+
+      t('add','add','เพิ่ม',ICON.plus)+
+      t('settings','settings','ตั้งค่า',ICON.gear)+
+      '</div>';
+  }
+
+  function render(){
+    var html;
+    switch(state.screen){
+      case 'list': html=screenList(); break;
+      case 'detail': html=screenDetail(); break;
+      case 'add': case 'form': html=screenForm(); break;
+      case 'settings': html=screenSettings(); break;
+      default: html=screenReport();
+    }
+    app.innerHTML=html;
+    if(state.screen==='list' && state.focusSearch){
+      var s=app.querySelector('[data-role="search"]'); if(s){ s.focus(); var v=s.value; s.value=''; s.value=v; }
+      state.focusSearch=false;
+    }
+  }
+
+  function readForm(){
+    var d=state.draft; if(!d) return;
+    app.querySelectorAll('[data-f]').forEach(function(el){ d[el.getAttribute('data-f')]=el.value; });
+    app.querySelectorAll('[data-rem]').forEach(function(el){
+      var i=+el.getAttribute('data-rem'), k=el.getAttribute('data-k');
+      if(d.reminders[i]) d.reminders[i][k]=el.value;
+    });
+  }
+  function go(scr){ state.screen=scr; render(); var c=app.querySelector('.content'); if(c) c.scrollTop=0; }
+
+  /* ---- install sheet (iOS) ---- */
+  function openSheet(){
+    sheetHost.innerHTML='<div class="sheet-mask" data-sheetmask="1"><div class="sheet">'+
+      '<div class="sh-head"><div class="sh-ic">'+ICON.install+'</div><div><h3>เพิ่มลงหน้าจอโฮม</h3></div></div>'+
+      '<div class="sh-sub">ทำครั้งเดียว แล้วเปิดใช้ได้เหมือนแอปทั่วไป — เต็มจอ มีไอคอนบนหน้าจอ</div>'+
+      '<div class="step"><div class="n">1</div><div class="stx">แตะปุ่ม <span class="shareglyph">'+ICON.share+'</span> “แชร์” ในแถบ Safari</div></div>'+
+      '<div class="step"><div class="n">2</div><div class="stx">เลื่อนหา แล้วแตะ <b>“เพิ่มไปยังหน้าจอโฮม”</b></div></div>'+
+      '<div class="step"><div class="n">3</div><div class="stx">แตะ <b>“เพิ่ม”</b> มุมขวาบน — เสร็จ!</div></div>'+
+      '<button class="btn" data-sheetclose="1" style="margin-top:16px">เข้าใจแล้ว</button>'+
+      '</div></div>';
+  }
+  function closeSheet(){ sheetHost.innerHTML=''; }
+  function doInstall(){
+    if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt.userChoice.then(function(){ deferredPrompt=null; render(); }); }
+    else { openSheet(); }
+  }
+
+  app.addEventListener('click', function(e){
+    var el;
+    if(el=e.target.closest('[data-tab]')){
+      var scr=el.getAttribute('data-tab');
+      if(scr==='add'){ state.draft={ name:'',phone:'',line:'',plate:'',policy:'',addr:'',note:'',photo:'', reminders:[{type:'prb',date:''}] }; go('add'); }
+      else go(scr);
+      return;
+    }
+    if(el=e.target.closest('[data-install]')){ doInstall(); return; }
+    if(el=e.target.closest('[data-installx]')){ setFlag(DISMISS); render(); return; }
+    if(el=e.target.closest('[data-open]')){ state.selId=el.getAttribute('data-open'); go('detail'); return; }
+    if(el=e.target.closest('[data-nav]')){
+      var n=el.getAttribute('data-nav');
+      if(n==='detail') go('detail'); else if(n==='list') go('list'); else go('report');
+      return;
+    }
+    if(el=e.target.closest('[data-edit]')){
+      var c=byId(el.getAttribute('data-edit'));
+      state.draft=JSON.parse(JSON.stringify(c)); if(!state.draft.reminders) state.draft.reminders=[];
+      go('form'); return;
+    }
+    if(el=e.target.closest('[data-del]')){
+      var id=el.getAttribute('data-del');
+      if(confirm('ลบลูกค้าคนนี้? การลบไม่สามารถกู้คืนได้')){
+        state.customers=state.customers.filter(function(x){ return x.id!==id; }); save(); toast('ลบลูกค้าแล้ว'); go('list');
+      }
+      return;
+    }
+    if(el=e.target.closest('[data-q]')){
+      var q=el.getAttribute('data-q'), t=today();
+      if(q==='month'){ state.from=iso(new Date(t.getFullYear(),t.getMonth(),1)); state.to=iso(new Date(t.getFullYear(),t.getMonth()+1,0)); }
+      else { state.from=iso(t); state.to=iso(addDays(t,+q)); }
+      render(); return;
+    }
+    if(el=e.target.closest('[data-type]')){ state.typeFilter=el.getAttribute('data-type'); render(); return; }
+    if(el=e.target.closest('[data-addrem]')){ readForm(); state.draft.reminders.push({type:'birthday',date:''}); render(); return; }
+    if(el=e.target.closest('[data-remdel]')){ readForm(); state.draft.reminders.splice(+el.getAttribute('data-remdel'),1); render(); return; }
+    if(el=e.target.closest('[data-photo]')){ readForm(); var pi=document.getElementById('photoInput'); if(pi) pi.click(); return; }
+    if(el=e.target.closest('[data-photodel]')){ readForm(); state.draft.photo=''; render(); return; }
+    if(el=e.target.closest('[data-export]')){ doExport(); return; }
+    if(el=e.target.closest('[data-cloud]')){ doCloudImport(el); return; }
+    if(el=e.target.closest('[data-import]')){ var ii=document.getElementById('importInput'); if(ii) ii.click(); return; }
+    if(el=e.target.closest('[data-reset]')){
+      if(confirm('รีเซ็ตข้อมูลทั้งหมดกลับเป็นตัวอย่าง?')){ state.customers=seed(); save(); toast('รีเซ็ตแล้ว'); go('report'); }
+      return;
+    }
+  });
+
+  sheetHost.addEventListener('click', function(e){
+    if(e.target.closest('[data-sheetclose]') || e.target.getAttribute('data-sheetmask')==='1') closeSheet();
+  });
+
+  app.addEventListener('change', function(e){
+    var el=e.target;
+    if(el.getAttribute('data-role')==='from'){ state.from=el.value; render(); return; }
+    if(el.getAttribute('data-role')==='to'){ state.to=el.value; render(); return; }
+    if(el.hasAttribute('data-rem') && el.getAttribute('data-k')==='type'){ readForm(); render(); return; }
+    if(el.id==='photoInput' && el.files && el.files[0]){
+      var rd=new FileReader();
+      rd.onload=function(){ resizeImg(rd.result, function(data){ state.draft.photo=data; render(); }); };
+      rd.readAsDataURL(el.files[0]); return;
+    }
+    if(el.id==='importInput' && el.files && el.files[0]){
+      var fr=new FileReader();
+      fr.onload=function(){
+        try{ var data=JSON.parse(fr.result);
+          if(Array.isArray(data)){ state.customers=data; save(); toast('นำเข้าข้อมูลสำเร็จ'); go('report'); }
+          else throw 0;
+        }catch(err){ toast('ไฟล์ไม่ถูกต้อง'); }
+      };
+      fr.readAsText(el.files[0]); return;
+    }
+  });
+
+  app.addEventListener('input', function(e){
+    if(e.target.getAttribute('data-role')==='search'){ state.search=e.target.value; state.focusSearch=true; render(); }
+  });
+
+  app.addEventListener('submit', function(e){
+    if(e.target.id!=='custform') return;
+    e.preventDefault();
+    readForm();
+    var d=state.draft;
+    if(!d.name || !d.name.trim()){ toast('กรุณากรอกชื่อลูกค้า'); return; }
+    d.reminders=(d.reminders||[]).filter(function(r){ return r.date; });
+    if(d.id && byId(d.id)){
+      var idx=state.customers.findIndex(function(x){ return x.id===d.id; });
+      state.customers[idx]=d; state.selId=d.id; save(); toast('บันทึกแล้ว'); go('detail');
+    } else {
+      d.id=uid(); state.customers.push(d); state.selId=d.id; save(); toast('เพิ่มลูกค้าแล้ว'); go('detail');
+    }
+  });
+
+  function resizeImg(src, cb){
+    var img=new Image();
+    img.onload=function(){
+      var max=520, w=img.width, h=img.height;
+      if(w>h && w>max){ h=h*max/w; w=max; } else if(h>=w && h>max){ w=w*max/h; h=max; }
+      var cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+      cv.getContext('2d').drawImage(img,0,0,w,h);
+      try{ cb(cv.toDataURL('image/jpeg',0.82)); }catch(e){ cb(src); }
+    };
+    img.onerror=function(){ cb(src); };
+    img.src=src;
+  }
+
+  function doExport(){
+    var blob=new Blob([JSON.stringify(state.customers,null,2)],{type:'application/json'});
+    var url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download='ลูกค้า-สำรอง-'+iso(today())+'.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+    toast('ส่งออกไฟล์สำรองแล้ว');
+  }
+
+  function doCloudImport(btn){
+    var label = btn ? btn.innerHTML : '';
+    if(btn){ btn.disabled = true; btn.textContent = 'กำลังโหลด...'; }
+    function done(){ if(btn){ btn.disabled=false; btn.innerHTML=label; } }
+    fetch('./customers-import.json?t=' + Date.now())
+      .then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); })
+      .then(function(data){
+        if(!Array.isArray(data) || !data.length) throw new Error('empty');
+        if(!confirm('โหลดรายชื่อลูกค้า '+data.length+' คน?\nข้อมูลเดิมในเครื่องจะถูกแทนที่ทั้งหมด')){ done(); return; }
+        state.customers = data; save(); toast('โหลด '+data.length+' คนเรียบร้อย'); go('report');
+      })
+      .catch(function(){ done(); toast('โหลดไม่สำเร็จ — เปิดผ่านลิงก์ออนไลน์แล้วลองใหม่'); });
+  }
+
+  /* ---- PWA setup: inject meta + icon + manifest at runtime ---- */
+  function makeIcon(size){
+    var cv=document.createElement('canvas'); cv.width=cv.height=size; var x=cv.getContext('2d'), s=size/180;
+    x.fillStyle='#0e7c7b'; x.fillRect(0,0,size,size);
+    x.fillStyle='#ffffff'; x.translate(0,-4*s);
+    x.beginPath();
+    x.moveTo(90*s,42*s);
+    x.bezierCurveTo(112*s,44*s,120*s,66*s,120*s,92*s);
+    x.bezierCurveTo(120*s,108*s,126*s,116*s,131*s,123*s);
+    x.lineTo(49*s,123*s);
+    x.bezierCurveTo(54*s,116*s,60*s,108*s,60*s,92*s);
+    x.bezierCurveTo(60*s,66*s,68*s,44*s,90*s,42*s);
+    x.closePath(); x.fill();
+    x.beginPath(); x.arc(90*s,40*s,6.5*s,0,7); x.fill();
+    x.beginPath(); x.arc(90*s,133*s,9*s,0,7); x.fill();
+    try{ return cv.toDataURL('image/png'); }catch(e){ return ''; }
+  }
+  function meta(name, content){
+    var m=document.querySelector('meta[name="'+name+'"]');
+    if(!m){ m=document.createElement('meta'); m.setAttribute('name',name); document.head.appendChild(m); }
+    m.setAttribute('content',content);
+  }
+  function linkTag(rel, href, extra){
+    var l=document.createElement('link'); l.setAttribute('rel',rel); l.setAttribute('href',href);
+    if(extra) for(var k in extra) l.setAttribute(k,extra[k]);
+    document.head.appendChild(l);
+  }
+  function setupPWA(){
+    meta('apple-mobile-web-app-capable','yes');
+    meta('mobile-web-app-capable','yes');
+    meta('apple-mobile-web-app-status-bar-style','default');
+    meta('apple-mobile-web-app-title','เตือนลูกค้า');
+    meta('theme-color','#0e7c7b');
+    var icon=makeIcon(512);
+    if(icon){
+      linkTag('apple-touch-icon', icon);
+      linkTag('icon', icon, {type:'image/png'});
+      try{
+        var manifest={ name:'เตือนวันหมดอายุลูกค้า', short_name:'เตือนลูกค้า', display:'standalone',
+          background_color:'#eef2f4', theme_color:'#0e7c7b', start_url:'.', scope:'.',
+          icons:[{src:icon,sizes:'512x512',type:'image/png',purpose:'any maskable'}] };
+        var mb=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+        linkTag('manifest', URL.createObjectURL(mb));
+      }catch(e){}
+    }
+  }
+  window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); deferredPrompt=e; render(); });
+  window.addEventListener('appinstalled', function(){ deferredPrompt=null; toast('ติดตั้งแอปแล้ว'); render(); });
+
+  setupPWA();
+  render();
+})();
+</script>
+
+</body>
+</html>
